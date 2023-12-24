@@ -1,36 +1,44 @@
 #! /usr/bin/bash
 export LC_COLLATE=C
-shopt -s extglob
-#define colors
-d=`tput setab 0 setaf 7`
-r=`tput setab 1 setaf 7`
-b=`tput setab 4 setaf 7`
-gr=`tput setab 8 setaf 7`
-g=`tput setab 2 setaf 7` 
+shopt -s extglob 
 #clear screan
 clear
+#get files location
+str=$0
+p=`echo ${str::-3}`
 #make sure you're in the right place
-if [ -d $HOME/DB ];then
-	cd $HOME/DB
+call=0
+if [[ $str =~ ^/ ]];then
+	if [ -d $p/DB ];then
+		cd $p/DB
+	else
+		mkdir $p/DB
+		cd $p/DB
+	fi
 else
-	mkdir $HOME/DB
-	cd $HOME/DB
+	if [ -d DB ];then
+		cd DB
+	else
+		mkdir DB
+		cd DB
+	fi
+	call=1
 fi
 #change opening menu prompt to current PWD
-PS3="${gr}PWD $PWD
-please choose operation >>${d}"
+PS3="PWD $PWD
+please choose operation >>"
 
 #make openig menu
 select DB_option in "Create DB" "Connect to DB" "List DB" "Drop DB" "Exit"
 do
-	PS3="${gr}PWD $PWD
-please choose operation >>${d}"
+	PS3="PWD $PWD
+please choose operation >>"
 	case $REPLY in
 		#Create DB
 		1)
 			clear
 			#read DB name
-			read -p "${gr}Please enter DB name: ${d}" DB_name
+			read -p "Please enter DB name: " DB_name
 			#validate name
 			while true
 			do
@@ -39,20 +47,20 @@ please choose operation >>${d}"
 						#check if DB already exists			
 						if [ -e $DB_name ];then
 							clear
-							echo "${r}This DB already exists${d}"
-							read -p "${gr}Please enter DB name: ${d}" DB_name
+							echo "This DB already exists"
+							read -p "Please enter DB name: " DB_name
 						else
 						#create DB directory
-							mkdir $DB_name
+							mkdir "$DB_name"
 							clear
-							echo "${g}$DB_name DB created${d}"
+							echo "$DB_name DB created"
 							break
 						fi
 					;;
 					*)
 						clear
-						echo "${r}DB name can only start with a char & can only contain chars, under_score or number${d}"
-						read -p "${gr}Please enter DB name: ${d}" DB_name
+						echo "DB name can only start with a char & can only contain chars, under_score or number"
+						read -p "Please enter DB name: " DB_name
 				esac
 			done	
 		;;
@@ -60,7 +68,7 @@ please choose operation >>${d}"
 		2)
 			clear
 			#change prompt
-			PS3="${gr}please choose DB to connect to: ${d}" 
+			PS3="please choose DB to connect to: " 
 			#check whether DBs exist 
 			available_DB=( `ls $PWD` )
 			len=${#available_DB[@]} 
@@ -74,8 +82,12 @@ please choose operation >>${d}"
 						[1-$len] )
 							#cd to choosen DB and redirect to tabels file
 							cd ./$Current_DB
-							clear	
-							source tables $Current_DB
+							clear
+							if (( $call == 0 ));then	
+								. ../../tables $Current_DB
+							else
+								. tables $Current_DB
+							fi
 							break
 						;;
 						$(($len+1)) )
@@ -83,16 +95,16 @@ please choose operation >>${d}"
 						;;
 						*)
 							clear
-							echo "${r}please choose between displayed DBs${d}"
+							echo "please choose between displayed DBs"
 					esac
 					REPLY=	
 				done
 			else
 				clear
-				echo "${r}no available DBs${d}"	
+				echo "no available DBs"	
 			fi
-			PS3="${gr}PWD $PWD
-please choose operation >>${d}"	
+			PS3="PWD $PWD
+please choose operation >>"	
 		;;
 		
 		#LISt DB
@@ -103,11 +115,11 @@ please choose operation >>${d}"
 			len=${#available_DB[@]}
 			if (( $len != 0 ));then
 				#list available DBs
-				echo "${g}available DBs${b}"
+				echo "available DBs"
 				ls -F | grep / 
-				echo "${d}"
+				echo ""
 			else
-				echo "${r}No available DBs${d}"		
+				echo "No available DBs"		
 			fi
 		;;
 		#Drop DB
@@ -117,7 +129,7 @@ please choose operation >>${d}"
 			available_DB=( `ls $PWD` )
 			len=${#available_DB[@]}
 			if (( $len != 0 ));then
-				PS3="${gr}please choose drop mode : ${d}"
+				PS3="please choose drop mode : "
 				#select to drop all or just one
 				select op in "Drop all" "Drop one" "Return"
 				do
@@ -125,16 +137,16 @@ please choose operation >>${d}"
 					case $REPLY in 
 						1)
 							clear
-							for DB in ${available_DB[@]}
+							for DB in "${available_DB[@]}"
 							do
-								rm -r $DB
+								rm -r "$DB"
 							done
-							echo "${g}all DBs removed${d}"
+							echo "all DBs removed"
 							break
 						;;
 						2)
 							clear
-							PS3="${gr}please choose DB to drop : ${d}"
+							PS3="please choose DB to drop : "
 							select Current_DB in ${available_DB[@]} "Return"
 							do
 								#make sure to choose of the available DBs
@@ -142,7 +154,7 @@ please choose operation >>${d}"
 									[1-$len] )
 										rm -r ./$Current_DB
 										clear
-										echo "${g}$Current_DB DB removed${d}"
+										echo "$Current_DB DB removed"
 										break
 									;;
 									$(($len+1)) )
@@ -150,7 +162,7 @@ please choose operation >>${d}"
 									;;	
 									*)
 										clear
-										echo "${r}please choose between displayed DBs${d}" 
+										echo "please choose between displayed DBs" 
 								esac	
 								REPLY=			
 							done
@@ -161,16 +173,16 @@ please choose operation >>${d}"
 						;;
 						*)
 							clear
-							echo "${r}Please choose from available modes${d}"
+							echo "Please choose from available modes"
 					esac
 					REPLY=
 				done	
 			else
 				clear
-				echo "${r}No available DBs${d}"
+				echo "No available DBs"
 			fi
-			PS3="${gr}PWD $PWD
-please choose operation >>${d}"
+			PS3="PWD $PWD
+please choose operation >>"
 		;;
 		#Exit
 		5) 
@@ -180,9 +192,8 @@ please choose operation >>${d}"
 		#default
 		*)
 			clear 
-			echo "${r}Please choose from available operations${d}"
+			echo "Please choose from available operations"
 	esac
 	REPLY=
 done
-
 
